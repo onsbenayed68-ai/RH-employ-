@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HRPulse - Gestion des Employés</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 antialiased transition-colors duration-200">
+
+    <div id="app" class="min-h-screen flex flex-col md:flex-row">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="w-full md:w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col shrink-0 transition-all duration-300 z-20">
+            <!-- Brand Logo -->
+            <div class="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-700">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-xl shadow-lg shadow-brand-500/30">
+                        <i data-lucide="users-round" class="w-5 h-5"></i>
+                    </div>
+                    <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-brand-600 to-indigo-600 bg-clip-text text-transparent">HRPulse</span>
+                </div>
+                <button id="close-mobile-sidebar" class="md:hidden text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-150 bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Tableau de bord</span>
+                </button>
+                <button onclick="switchTab('employees')" id="nav-employees" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-150 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span>Employés</span>
+                    <span id="badge-total-emp" class="ml-auto bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-2 py-0.5 rounded-full">0</span>
+                </button>
+                <button onclick="switchTab('leaves')" id="nav-leaves" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-150 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white">
+                    <i data-lucide="calendar-days" class="w-5 h-5"></i>
+                    <span>Demandes de Congés</span>
+                    <span id="badge-pending-leaves" class="ml-auto bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-semibold px-2 py-0.5 rounded-full">0</span>
+                </button>
+            </nav>
+
+            <!-- User Info & Dark Mode Footer -->
+            <div class="p-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80" alt="Admin" class="w-9 h-9 rounded-full object-cover ring-2 ring-brand-500/30">
+                    <div class="truncate">
+                        <p class="text-sm font-semibold truncate leading-tight">Alexandre Dubois</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 truncate">RH Manager</p>
+                    </div>
+                </div>
+                <button id="theme-toggle" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-slate-400 transition">
+                    <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+                    <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+            <!-- Top Mobile Bar -->
+            <header class="h-16 md:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 sticky top-0 z-10">
+                <div class="flex items-center gap-3">
+                    <button id="open-mobile-sidebar" class="text-slate-600 dark:text-slate-300 p-1">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <span class="font-bold text-lg bg-gradient-to-r from-brand-600 to-indigo-600 bg-clip-text text-transparent">HRPulse</span>
+                </div>
+                <button onclick="openModal('add-employee-modal')" class="bg-brand-600 hover:bg-brand-700 text-white p-2 rounded-lg text-sm font-medium flex items-center gap-1 shadow">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                </button>
+            </header>
+
+            <!-- Notification Banner Container -->
+            <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+            <div class="p-4 sm:p-6 lg:p-8 space-y-8 max-w-7xl w-full mx-auto">
+                
+                <!-- SECTION 1: DASHBOARD -->
+                <section id="section-dashboard" class="tab-content space-y-6">
+                    <!-- Section Header -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-2xl font-bold tracking-tight">Tableau de bord RH</h1>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Vue d'ensemble des métriques de votre entreprise.</p>
+                        </div>
+                        <button onclick="openModal('employee-modal')" class="hidden sm:flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-medium shadow-md shadow-brand-500/20 transition-all duration-150">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i>
+                            <span>Ajouter un employé</span>
+                        </button>
+                    </div>
+
+                    <!-- Metrics Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        <!-- Total Employees -->
+                        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Employés</span>
+                                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                    <i data-lucide="users" class="w-5 h-5"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-baseline gap-2">
+                                <span id="stat-total" class="text-3xl font-bold">0</span>
+                                <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center">
+                                    <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i> +4%
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Present Today -->
+                        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Présents aujourd'hui</span>
+                                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                    <i data-lucide="user-check" class="w-5 h-5"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-baseline gap-2">
+                                <span id="stat-present" class="text-3xl font-bold">0</span>
+                                <span id="stat-present-pct" class="text-xs text-slate-500">0% du total</span>
+                            </div>
+                        </div>
+
+                        <!-- On Leave -->
+                        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-slate-500 dark:text-slate-400">En Congé</span>
+                                <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                                    <i data-lucide="plane-takeoff" class="w-5 h-5"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-baseline gap-2">
+                                <span id="stat-on-leave" class="text-3xl font-bold">0</span>
+                                <span class="text-xs text-amber-600 dark:text-amber-400">Actuellement</span>
+                            </div>
+                        </div>
+
+                        <!-- Remote Work -->
+                        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Télétravail</span>
+                                <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                                    <i data-lucide="laptop" class="w-5 h-5"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-baseline gap-2">
+                                <span id="stat-remote" class="text-3xl font-bold">0</span>
+                                <span class="text-xs text-purple-600 dark:text-purple-400">À distance</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Dept Chart -->
+                        <div class="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+                            <h3 class="font-semibold text-lg mb-4">Répartition par Département</h3>
+                            <div class="h-64 relative">
+                                <canvas id="deptChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Status Doughnut -->
+                        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+                            <h3 class="font-semibold text-lg mb-4">Statut de Présence</h3>
+                            <div class="h-64 relative flex items-center justify-center">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity Section -->
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+                        <h3 class="font-semibold text-lg mb-4">Mouvements Recents</h3>
+                        <div class="divide-y divide-slate-100 dark:divide-slate-700/50" id="recent-activity-list">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 2: EMPLOYEES MANAGEMENT -->
+                <section id="section-employees" class="tab-content space-y-6 hidden">
+                    <!-- Header -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-2xl font-bold tracking-tight">Liste des Employés</h1>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Gérez le personnel, leurs rôles et informations.</p>
+                        </div>
+                        <button onclick="openModal('employee-modal')" class="flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-medium shadow-md shadow-brand-500/20 transition">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>Nouvel Employé</span>
+                        </button>
+                    </div>
+
+                    <!-- Filters & Search Bar -->
+                    <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
+                        <!-- Search Box -->
+                        <div class="relative w-full md:w-80">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="search-input" placeholder="Rechercher par nom, email..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+
+                        <!-- Dropdowns -->
+                        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                            <!-- Department Filter -->
+                            <select id="filter-dept" class="px-3 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 flex-1 md:flex-none">
+                                <option value="">Tous les départements</option>
+                                <option value="Ingénierie">Ingénierie</option>
+                                <option value="Ressources Humaines">Ressources Humaines</option>
+                                <option value="Design">Design</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="Ventes">Ventes</option>
+                                <option value="Finance">Finance</option>
+                            </select>
+
+                            <!-- Status Filter -->
+                            <select id="filter-status" class="px-3 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 flex-1 md:flex-none">
+                                <option value="">Tous les statuts</option>
+                                <option value="Présent">Présent</option>
+                                <option value="En Congé">En Congé</option>
+                                <option value="Télétravail">Télétravail</option>
+                                <option value="Absent">Absent</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Employees Table -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 dark:bg-slate-700/30 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider border-b border-slate-200 dark:border-slate-700">
+                                    <tr>
+                                        <th class="px-6 py-4">Employé</th>
+                                        <th class="px-6 py-4">Département</th>
+                                        <th class="px-6 py-4">Statut</th>
+                                        <th class="px-6 py-4">Contact</th>
+                                        <th class="px-6 py-4">Date d'embauche</th>
+                                        <th class="px-6 py-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employees-table-body" class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                    <!-- Dynamic rows loaded via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Empty State Container -->
+                        <div id="no-employees-state" class="hidden p-12 text-center">
+                            <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                                <i data-lucide="search-x" class="w-6 h-6"></i>
+                            </div>
+                            <h3 class="font-semibold text-slate-700 dark:text-slate-300">Aucun employé trouvé</h3>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Essayez de modifier vos termes de recherche ou vos filtres.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 3: LEAVE MANAGEMENT -->
+                <section id="section-leaves" class="tab-content space-y-6 hidden">
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight">Gestion des Congés</h1>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Examinez et gérez les demandes d'absence des collaborateurs.</p>
+                    </div>
+
+                    <!-- Leaves Request Table -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 dark:bg-slate-700/30 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider border-b border-slate-200 dark:border-slate-700">
+                                    <tr>
+                                        <th class="px-6 py-4">Employé</th>
+                                        <th class="px-6 py-4">Type</th>
+                                        <th class="px-6 py-4">Période</th>
+                                        <th class="px-6 py-4">Durée</th>
+                                        <th class="px-6 py-4">Statut</th>
+                                        <th class="px-6 py-4 text-right">Décision</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaves-table-body" class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                    <!-- Dynamic leaves rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: ADD / EDIT EMPLOYEE -->
+    <div id="employee-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200 p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 transform scale-95 transition-transform duration-200">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700">
+                <h3 id="modal-title" class="text-lg font-bold">Ajouter un employé</h3>
+                <button onclick="closeModal('employee-modal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <form id="employee-form" class="mt-4 space-y-4">
+                <input type="hidden" id="emp-id">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Prénom</label>
+                        <input type="text" id="emp-firstname" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Nom</label>
+                        <input type="text" id="emp-lastname" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Email professionnel</label>
+                    <input type="email" id="emp-email" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Téléphone</label>
+                        <input type="text" id="emp-phone" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Département</label>
+                        <select id="emp-dept" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="Ingénierie">Ingénierie</option>
+                            <option value="Ressources Humaines">Ressources Humaines</option>
+                            <option value="Design">Design</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Ventes">Ventes</option>
+                            <option value="Finance">Finance</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Intitulé du poste</label>
+                        <input type="text" id="emp-role" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Statut</label>
+                        <select id="emp-status" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="Présent">Présent</option>
+                            <option value="En Congé">En Congé</option>
+                            <option value="Télétravail">Télétravail</option>
+                            <option value="Absent">Absent</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Date d'embauche</label>
+                    <input type="date" id="emp-date" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+
+                <div class="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-700">
+                    <button type="button" onclick="closeModal('employee-modal')" class="px-4 py-2 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">Annuler</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl text-sm font-medium bg-brand-600 hover:bg-brand-700 text-white shadow-md shadow-brand-500/20">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: VIEW EMPLOYEE PROFILE -->
+    <div id="profile-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200 p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 transform scale-95 transition-transform duration-200 relative overflow-hidden">
+            <button onclick="closeModal('profile-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div id="profile-modal-content">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONFIRM DELETE -->
+    <div id="delete-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200 p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 text-center">
+            <div class="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold">Confirmer la suppression</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">Êtes-vous sûr de vouloir supprimer cet employé ? Cette action est irréversible.</p>
+            <div class="mt-6 flex justify-center gap-3">
+                <button onclick="closeModal('delete-modal')" class="px-4 py-2 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">Annuler</button>
+                <button id="confirm-delete-btn" class="px-4 py-2 rounded-xl text-sm font-medium bg-rose-600 hover:bg-rose-700 text-white shadow-md shadow-rose-500/20">Supprimer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPLICATION LOGIC JS -->
+    <script>
+        // Initial Dummy Data
+        const initialEmployees = [
+            { id: "1", firstName: "Sophie", lastName: "Martin", email: "s.martin@company.com", phone: "+33 6 12 34 56 78", department: "Ingénierie", role: "Développeuse Lead", status: "Présent", hireDate: "2021-03-15", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80" },
+            { id: "2", firstName: "Lucas", lastName: "Bernard", email: "l.bernard@company.com", phone: "+33 6 98 76 54 32", department: "Design", role: "UI/UX Designer", status: "Télétravail", hireDate: "2022-01-10", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" },
+            { id: "3", firstName: "Camille", lastName: "Rousseau", email: "c.rousseau@company.com", phone: "+33 6 45 89 23 11", department: "Ressources Humaines", role: "Spécialiste Recrutement", status: "Présent", hireDate: "2020-11-01", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" },
+            { id: "4", firstName: "Thomas", lastName: "Petit", email: "t.petit@company.com", phone: "+33 6 77 11 22 33", department: "Marketing", role: "Chef de Produit", status: "En Congé", hireDate: "2023-05-20", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" },
+            { id: "5", firstName: "Emma", lastName: "Moreau", email: "e.moreau@company.com", phone: "+33 6 33 44 55 66", department: "Ventes", role: "Account Executive", status: "Présent", hireDate: "2021-08-12", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80" },
+            { id: "6", firstName: "Antoine", lastName: "Lefebvre", email: "a.lefebvre@company.com", phone: "+33 6 55 66 77 88", department: "Finance", role: "Analyste Financier", status: "Absent", hireDate: "2019-04-03", avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80" }
+        ];
+
+        const initialLeaves = [
+            { id: "l1", empId: "4", empName: "Thomas Petit", type: "Congé Payé", startDate: "2026-11-20", endDate: "2026-11-28", days: 8, status: "En attente" },
+            { id: "l2", empId: "2", empName: "Lucas Bernard", type: "RTT", startDate: "2026-12-01", endDate: "2026-12-02", days: 2, status: "Approuvé" },
+            { id: "l3", empId: "1", empName: "Sophie Martin", type: "Maladie", startDate: "2026-11-05", endDate: "2026-11-06", days: 2, status: "Refusé" }
+        ];
+
+        // App State
+        let employees = JSON.parse(localStorage.getItem('hr_employees')) || initialEmployees;
+        let leaves = JSON.parse(localStorage.getItem('hr_leaves')) || initialLeaves;
+        let selectedEmpIdToDelete = null;
+        let deptChartInstance = null;
+        let statusChartInstance = null;
+
+        // Initialize App
+        document.addEventListener("DOMContentLoaded", () => {
+            initIcons();
+            initTheme();
+            renderAll();
+            setupEventListeners();
+        });
+
+        function initIcons() {
+            lucide.createIcons();
+        }
+
+        function saveData() {
+            localStorage.setItem('hr_employees', JSON.stringify(employees));
+            localStorage.setItem('hr_leaves', JSON.stringify(leaves));
+        }
+
+        // Theme Handling
+        function initTheme() {
+            if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+
+            document.getElementById('theme-toggle').addEventListener('click', () => {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                }
+                updateCharts();
+            });
+        }
+
+        // Navigation
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-50', 'dark:bg-brand-900/40', 'text-brand-600', 'dark:text-brand-400');
+                btn.classList.add('text-slate-600', 'dark:text-slate-400');
+            });
+
+            document.getElementById(`section-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            activeBtn.classList.add('bg-brand-50', 'dark:bg-brand-900/40', 'text-brand-600', 'dark:text-brand-400');
+            activeBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+
+            // Close mobile menu on switch
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+            document.getElementById('sidebar').classList.remove('translate-x-0');
+        }
+
+        // Render Functions
+        function renderAll() {
+            renderDashboardStats();
+            renderEmployeesTable();
+            renderLeavesTable();
+            updateBadges();
+            updateCharts();
+            saveData();
+        }
+
+        function updateBadges() {
+            document.getElementById('badge-total-emp').textContent = employees.length;
+            const pendingLeaves = leaves.filter(l => l.status === 'En attente').length;
+            document.getElementById('badge-pending-leaves').textContent = pendingLeaves;
+        }
+
+        function renderDashboardStats() {
+            const total = employees.length;
+            const present = employees.filter(e => e.status === 'Présent').length;
+            const onLeave = employees.filter(e => e.status === 'En Congé').length;
+            const remote = employees.filter(e => e.status === 'Télétravail').length;
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-present').textContent = present;
+            document.getElementById('stat-present-pct').textContent = total ? `${Math.round((present / total) * 100)}% du total` : '0%';
+            document.getElementById('stat-on-leave').textContent = onLeave;
+            document.getElementById('stat-remote').textContent = remote;
+
+            // Render Activity Stream
+            const activityContainer = document.getElementById('recent-activity-list');
+            const recentEmps = [...employees].reverse().slice(0, 4);
+            
+            activityContainer.innerHTML = recentEmps.map(emp => `
+                <div class="py-3 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <img src="${emp.avatar || getPlaceholderAvatar(emp.firstName)}" class="w-9 h-9 rounded-full object-cover">
+                        <div>
+                            <p class="text-sm font-medium">${emp.firstName} ${emp.lastName}</p>
+                            <p class="text-xs text-slate-500">${emp.role} • ${emp.department}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs text-slate-400">Embauché(e) le ${formatDate(emp.hireDate)}</span>
+                </div>
+            `).join('');
+        }
+
+        function getStatusBadgeClass(status) {
+            switch (status) {
+                case 'Présent': return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800';
+                case 'Télétravail': return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800';
+                case 'En Congé': return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800';
+                default: return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800';
+            }
+        }
+
+        function renderEmployeesTable() {
+            const tbody = document.getElementById('employees-table-body');
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+            const deptVal = document.getElementById('filter-dept').value;
+            const statusVal = document.getElementById('filter-status').value;
+
+            const filtered = employees.filter(emp => {
+                const matchesSearch = `${emp.firstName} ${emp.lastName} ${emp.email} ${emp.role}`.toLowerCase().includes(searchVal);
+                const matchesDept = !deptVal || emp.department === deptVal;
+                const matchesStatus = !statusVal || emp.status === statusVal;
+                return matchesSearch && matchesDept && matchesStatus;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                document.getElementById('no-employees-state').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('no-employees-state').classList.add('hidden');
+            tbody.innerHTML = filtered.map(emp => `
+                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+                    <td class="px-6 py-4 flex items-center gap-3">
+                        <img src="${emp.avatar || getPlaceholderAvatar(emp.firstName)}" class="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700">
+                        <div>
+                            <div class="font-medium text-slate-900 dark:text-white cursor-pointer hover:text-brand-600" onclick="viewProfile('${emp.id}')">${emp.firstName} ${emp.lastName}</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400">${emp.role}</div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300">
+                            ${emp.department}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadgeClass(emp.status)}">
+                            ${emp.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-xs space-y-0.5">
+                            <div class="text-slate-700 dark:text-slate-300">${emp.email}</div>
+                            <div class="text-slate-400">${emp.phone}</div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">
+                        ${formatDate(emp.hireDate)}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <button onclick="viewProfile('${emp.id}')" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500 hover:text-brand-600 transition" title="Voir fiche">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="editEmployee('${emp.id}')" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500 hover:text-indigo-600 transition" title="Modifier">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="promptDelete('${emp.id}')" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500 hover:text-rose-600 transition" title="Supprimer">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            initIcons();
+        }
+
+        function renderLeavesTable() {
+            const tbody = document.getElementById('leaves-table-body');
+            tbody.innerHTML = leaves.map(leave => {
+                let badgeStyle = "bg-slate-100 text-slate-700";
+                if(leave.status === 'Approuvé') badgeStyle = "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-400";
+                if(leave.status === 'Refusé') badgeStyle = "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-400";
+                if(leave.status === 'En attente') badgeStyle = "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400";
+
+                return `
+                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+                    <td class="px-6 py-4 font-medium text-slate-900 dark:text-white">${leave.empName}</td>
+                    <td class="px-6 py-4 text-slate-600 dark:text-slate-300">${leave.type}</td>
+                    <td class="px-6 py-4 text-xs text-slate-500">${formatDate(leave.startDate)} au ${formatDate(leave.endDate)}</td>
+                    <td class="px-6 py-4">${leave.days} jour(s)</td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${badgeStyle}">
+                            ${leave.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        ${leave.status === 'En attente' ? `
+                            <div class="flex items-center justify-end gap-2">
+                                <button onclick="updateLeaveStatus('${leave.id}', 'Approuvé')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition flex items-center gap-1">
+                                    <i data-lucide="check" class="w-3.5 h-3.5"></i> Approuver
+                                </button>
+                                <button onclick="updateLeaveStatus('${leave.id}', 'Refusé')" class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-medium transition flex items-center gap-1">
+                                    <i data-lucide="x" class="w-3.5 h-3.5"></i> Refuser
+                                </button>
+                            </div>
+                        ` : `<span class="text-xs text-slate-400">Traité</span>`}
+                    </td>
+                </tr>
+            `}).join('');
+            initIcons();
+        }
+
+        // Charts Logic
+        function updateCharts() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+
+            // Dept chart data
+            const depts = ["Ingénierie", "Ressources Humaines", "Design", "Marketing", "Ventes", "Finance"];
+            const deptCounts = depts.map(d => employees.filter(e => e.department === d).length);
+
+            if (deptChartInstance) deptChartInstance.destroy();
+            const ctxDept = document.getElementById('deptChart').getContext('2d');
+            deptChartInstance = new Chart(ctxDept, {
+                type: 'bar',
+                data: {
+                    labels: depts,
+                    datasets: [{
+                        label: 'Nombre d\'employés',
+                        data: deptCounts,
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: textColor }, grid: { display: false } },
+                        y: { ticks: { color: textColor, precision: 0 }, grid: { color: gridColor } }
+                    }
+                }
+            });
+
+            // Status doughnut data
+            const statuses = ["Présent", "En Congé", "Télétravail", "Absent"];
+            const statusCounts = statuses.map(s => employees.filter(e => e.status === s).length);
+
+            if (statusChartInstance) statusChartInstance.destroy();
+            const ctxStatus = document.getElementById('statusChart').getContext('2d');
+            statusChartInstance = new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: statuses,
+                    datasets: [{
+                        data: statusCounts,
+                        backgroundColor: ['#10b981', '#f59e0b', '#a855f7', '#f43f5e'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: textColor, font: { size: 11 } } }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        // Modal Controls
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.firstElementChild.classList.remove('scale-95');
+                modal.firstElementChild.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.firstElementChild.classList.remove('scale-100');
+            modal.firstElementChild.classList.add('scale-95');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        // CRUD Operations
+        function editEmployee(id) {
+            const emp = employees.find(e => e.id === id);
+            if (!emp) return;
+
+            document.getElementById('modal-title').textContent = "Modifier l'employé";
+            document.getElementById('emp-id').value = emp.id;
+            document.getElementById('emp-firstname').value = emp.firstName;
+            document.getElementById('emp-lastname').value = emp.lastName;
+            document.getElementById('emp-email').value = emp.email;
+            document.getElementById('emp-phone').value = emp.phone;
+            document.getElementById('emp-dept').value = emp.department;
+            document.getElementById('emp-role').value = emp.role;
+            document.getElementById('emp-status').value = emp.status;
+            document.getElementById('emp-date').value = emp.hireDate;
+
+            openModal('employee-modal');
+        }
+
+        document.getElementById('employee-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('emp-id').value;
+            const empData = {
+                id: id || Date.now().toString(),
+                firstName: document.getElementById('emp-firstname').value,
+                lastName: document.getElementById('emp-lastname').value,
+                email: document.getElementById('emp-email').value,
+                phone: document.getElementById('emp-phone').value,
+                department: document.getElementById('emp-dept').value,
+                role: document.getElementById('emp-role').value,
+                status: document.getElementById('emp-status').value,
+                hireDate: document.getElementById('emp-date').value,
+                avatar: id ? (employees.find(e => e.id === id)?.avatar) : null
+            };
+
+            if (id) {
+                const index = employees.findIndex(e => e.id === id);
+                employees[index] = empData;
+                showToast("Employé mis à jour avec succès !");
+            } else {
+                employees.unshift(empData);
+                showToast("Nouvel employé ajouté !");
+            }
+
+            closeModal('employee-modal');
+            renderAll();
+            // Reset Form
+            document.getElementById('employee-form').reset();
+            document.getElementById('emp-id').value = '';
+            document.getElementById('modal-title').textContent = "Ajouter un employé";
+        });
+
+        function promptDelete(id) {
+            selectedEmpIdToDelete = id;
+            openModal('delete-modal');
+        }
+
+        document.getElementById('confirm-delete-btn').addEventListener('click', () => {
+            if (selectedEmpIdToDelete) {
+                employees = employees.filter(e => e.id !== selectedEmpIdToDelete);
+                renderAll();
+                showToast("Employé supprimé", "rose");
+                closeModal('delete-modal');
+                selectedEmpIdToDelete = null;
+            }
+        });
+
+        function viewProfile(id) {
+            const emp = employees.find(e => e.id === id);
+            if (!emp) return;
+
+            const content = document.getElementById('profile-modal-content');
+            content.innerHTML = `
+                <div class="text-center pt-2">
+                    <img src="${emp.avatar || getPlaceholderAvatar(emp.firstName)}" class="w-24 h-24 rounded-full object-cover mx-auto ring-4 ring-brand-500/20">
+                    <h2 class="text-xl font-bold mt-3">${emp.firstName} ${emp.lastName}</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">${emp.role}</p>
+                    <span class="inline-flex items-center mt-2 px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadgeClass(emp.status)}">
+                        ${emp.status}
+                    </span>
+                </div>
+
+                <div class="mt-6 space-y-3 border-t border-slate-100 dark:border-slate-700/60 pt-4 text-sm">
+                    <div class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                        <i data-lucide="building-2" class="w-4 h-4 text-slate-400"></i>
+                        <span>Département: <strong>${emp.department}</strong></span>
+                    </div>
+                    <div class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                        <i data-lucide="mail" class="w-4 h-4 text-slate-400"></i>
+                        <span>Email: <a href="mailto:${emp.email}" class="text-brand-600 hover:underline">${emp.email}</a></span>
+                    </div>
+                    <div class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                        <i data-lucide="phone" class="w-4 h-4 text-slate-400"></i>
+                        <span>Téléphone: <strong>${emp.phone}</strong></span>
+                    </div>
+                    <div class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                        <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
+                        <span>Date d'embauche: <strong>${formatDate(emp.hireDate)}</strong></span>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button onclick="closeModal('profile-modal')" class="w-full py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 font-medium rounded-xl text-sm transition">
+                        Fermer
+                    </button>
+                </div>
+            `;
+            initIcons();
+            openModal('profile-modal');
+        }
+
+        function updateLeaveStatus(leaveId, status) {
+            const leave = leaves.find(l => l.id === leaveId);
+            if (leave) {
+                leave.status = status;
+                renderAll();
+                showToast(`Demande de congé ${status.toLowerCase()} !`);
+            }
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            document.getElementById('search-input').addEventListener('input', renderEmployeesTable);
+            document.getElementById('filter-dept').addEventListener('change', renderEmployeesTable);
+            document.getElementById('filter-status').addEventListener('change', renderEmployeesTable);
+
+            // Mobile sidebar toggles
+            const sidebar = document.getElementById('sidebar');
+            document.getElementById('open-mobile-sidebar').addEventListener('click', () => {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+            });
+            document.getElementById('close-mobile-sidebar').addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('translate-x-0');
+            });
+        }
+
+        // Helpers
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateStr).toLocaleDateString('fr-FR', options);
+        }
+
+        function getPlaceholderAvatar(name) {
+            return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=fff`;
+        }
+
+        function showToast(message, color = "emerald") {
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-xl shadow-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-sm flex items-center justify-between border-l-4 border-${color}-500 transform transition-all duration-300 translate-y-2 opacity-0 pointer-events-auto`;
+            toast.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <i data-lucide="info" class="w-4 h-4 text-${color}-400"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            const container = document.getElementById('toast-container');
+            container.appendChild(toast);
+            initIcons();
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
